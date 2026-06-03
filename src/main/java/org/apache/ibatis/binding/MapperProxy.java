@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2020 the original author or authors.
+ *    Copyright 2009-2025 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -38,10 +38,30 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
   private static final long serialVersionUID = -4724728412955527868L;
   private static final int ALLOWED_MODES = MethodHandles.Lookup.PRIVATE | MethodHandles.Lookup.PROTECTED
       | MethodHandles.Lookup.PACKAGE | MethodHandles.Lookup.PUBLIC;
+
+  /**
+   * 针对 JDK 8 中的特殊处理，该字段指向了 MethodHandles.Lookup 的构造方法。
+   */
   private static final Constructor<Lookup> lookupConstructor;
+
+  /**
+   * 除了 JDK 8 之外的其他 JDK 版本会使用该字段，该字段指向
+   */
   private static final Method privateLookupInMethod;
+
+  /**
+   * 记录了当前 MapperProxy 关联的 SqlSession 对象。在与当前 MapperProxy 关联的代理对象中，会用该 SqlSession 访问数据库。
+   */
   private final SqlSession sqlSession;
+
+  /**
+   * Mapper 接口类型，也是当前 MapperProxy 关联的代理对象实现的接口类型。
+   */
   private final Class<T> mapperInterface;
+
+  /**
+   * 用于缓存 MapperMethodInvoker 对象的集合。methodCache 中的 key 是 Mapper 接口中的方法，value 是该方法对应的 MapperMethodInvoker 对象。
+   */
   private final Map<Method, MapperMethodInvoker> methodCache;
 
   public MapperProxy(SqlSession sqlSession, Class<T> mapperInterface, Map<Method, MapperMethodInvoker> methodCache) {
@@ -94,14 +114,20 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
       // A workaround for https://bugs.openjdk.java.net/browse/JDK-8161372
       // It should be removed once the fix is backported to Java 8 or
       // MyBatis drops Java 8 support. See gh-1929
+      // 尝试从methodCache缓存中查询方法对应的MapperMethodInvoker
       MapperMethodInvoker invoker = methodCache.get(method);
       if (invoker != null) {
         return invoker;
       }
-
+      // 如果方法在缓存中没有对应的MapperMethodInvoker，则进行创建
       return methodCache.computeIfAbsent(method, m -> {
         if (m.isDefault()) {
+          // 针对default方法的处理
           try {
+            // 这里根据JDK版本的不同，获取方法对应的MethodHandle的方式也有所不同
+            // 在JDK 8中使用的是lookupConstructor字段，而在JDK 9中使用的是
+            // privateLookupInMethod字段。获取到MethodHandle之后，会使用
+            // DefaultMethodInvoker进行封装
             if (privateLookupInMethod == null) {
               return new DefaultMethodInvoker(getMethodHandleJava8(method));
             } else {
@@ -112,6 +138,7 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
             throw new RuntimeException(e);
           }
         } else {
+          // 对于其他方法，会创建MapperMethod并使用PlainMethodInvoker封装
           return new PlainMethodInvoker(new MapperMethod(mapperInterface, method, sqlSession.getConfiguration()));
         }
       });
@@ -149,6 +176,7 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args, SqlSession sqlSession) throws Throwable {
+      // 直接执行MapperMethod.execute()方法完成方法调用
       return mapperMethod.execute(sqlSession, args);
     }
   }
@@ -163,6 +191,7 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args, SqlSession sqlSession) throws Throwable {
+      // 首先将MethodHandle绑定到一个实例对象上，然后调用invokeWithArguments()方法执行目标方法
       return methodHandle.bindTo(proxy).invokeWithArguments(args);
     }
   }

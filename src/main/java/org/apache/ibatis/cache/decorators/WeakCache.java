@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2019 the original author or authors.
+ *    Copyright 2009-2025 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -25,7 +25,12 @@ import org.apache.ibatis.cache.Cache;
 /**
  * Weak Reference cache decorator.
  * Thanks to Dr. Heinz Kabutz for his guidance here.
- *
+ * <p>弱引用比软引用的引用强度还要弱。
+ * 弱引用可以引用一个对象，但无法阻止这个对象被 GC 回收，也就是说，在 JVM 进行垃圾回收的时候，
+ * 若发现某个对象只有一个弱引用指向它，那么这个对象会被 GC 立刻回收。
+ * 只被弱引用指向的对象只在两次 GC 之间存活。
+ * <p>而只被软引用指向的对象是在 JVM 内存紧张的时候才被回收，它是可以经历多次 GC 的，这就是两者最大的区别。
+ * 在 WeakReference 指向的对象被回收时，也会将 WeakReference 对象添加到关联的队列中。
  * @author Clinton Begin
  */
 public class WeakCache implements Cache {

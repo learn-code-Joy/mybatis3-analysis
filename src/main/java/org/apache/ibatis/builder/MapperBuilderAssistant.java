@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2022 the original author or authors.
+ *    Copyright 2009-2025 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -103,6 +103,11 @@ public class MapperBuilderAssistant extends BaseBuilder {
     return currentNamespace + "." + base;
   }
 
+  /**
+   * 根据被引用的namespace 查找共享的 Cache 对象来初始化 currentCache，而不再创建新的Cache 对象，从而实现二级缓存的共享。
+   * @param namespace
+   * @return
+   */
   public Cache useCacheRef(String namespace) {
     if (namespace == null) {
       throw new BuilderException("cache-ref element requires a namespace attribute.");
@@ -129,7 +134,9 @@ public class MapperBuilderAssistant extends BaseBuilder {
       boolean blocking,
       Properties props) {
     Cache cache = new CacheBuilder(currentNamespace)
+      // 将implementation默认值设置为PerpetualCache
         .implementation(valueOrDefault(typeClass, PerpetualCache.class))
+      // 在decorators集合中默认添加LruCache装饰器
         .addDecorator(valueOrDefault(evictionClass, LruCache.class))
         .clearInterval(flushInterval)
         .size(size)
@@ -180,10 +187,13 @@ public class MapperBuilderAssistant extends BaseBuilder {
       Discriminator discriminator,
       List<ResultMapping> resultMappings,
       Boolean autoMapping) {
+    // ResultMap的完整id是"namespace.id"的格式
     id = applyCurrentNamespace(id, false);
+    // 获取被继承的ResultMap的完整id，也就是父ResultMap对象的完整id
     extend = applyCurrentNamespace(extend, true);
 
     if (extend != null) {
+      // 针对extend属性的处理
       // 检测Configuration.resultMaps集合中是否存在被继承的ResultMap对象
       if (!configuration.hasResultMap(extend)) {
         throw new IncompleteElementException("Could not find a parent resultmap with id '" + extend + "'");
@@ -430,7 +440,9 @@ public class MapperBuilderAssistant extends BaseBuilder {
       String resultSet,
       String foreignColumn,
       boolean lazy) {
+    // 根据property属性ResultType对象的属性名获取对应的JavaType，默认是Object.class
     Class<?> javaTypeClass = resolveResultJavaType(resultType, property, javaType);
+    // 根据javaTypeClass和typeHandler获取TypeHandler对象
     TypeHandler<?> typeHandlerInstance = resolveTypeHandler(javaTypeClass, typeHandler);
     List<ResultMapping> composites;
     // 如果没有子查询并且外键为空

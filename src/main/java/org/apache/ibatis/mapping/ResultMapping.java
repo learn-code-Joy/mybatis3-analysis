@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2020 the original author or authors.
+ *    Copyright 2009-2025 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -31,19 +31,55 @@ import org.apache.ibatis.type.TypeHandlerRegistry;
 public class ResultMapping {
 
   private Configuration configuration;
+
+  /**
+   * 当前标签中指定的 property 属性值，指向的是与 column 列对应的属性名称。
+   */
   private String property;
+
+  /**
+   * 当前标签中指定的 column 属性值，指向的是数据库表中的一个列名（或是别名）。
+   */
   private String column;
+
+  /**
+   * 当前标签指定的 javaType 属性值和 jdbcType 属性值，指定了 property 字段的 Java 类型以及对应列的 JDBC 类型。
+   */
   private Class<?> javaType;
   private JdbcType jdbcType;
+
+  /**
+   * 当前标签的 typeHandler 属性值，这里指定的 TypeHandler 会覆盖默认的类型处理器。
+   */
   private TypeHandler<?> typeHandler;
+
+  /**
+   * 当前标签的 resultMap 属性值，通过该属性我们可以引用另一个 <resultMap> 标签的id，然后由这个被引用的<resultMap> 标签映射结果集中的一部分列。
+   */
   private String nestedResultMapId;
+
+  /**
+   * 当前标签的select 属性，我们可以通过该属性引用另一个 <select> 标签中的select 语句定义，它会将当前列的值作为参数传入这个 select 语句。
+   */
   private String nestedQueryId;
   private Set<String> notNullColumns;
+
+  /**
+   * 当前标签的 columnPrefix 属性值，记录了表中列名的公共前缀。
+   */
   private String columnPrefix;
   private List<ResultFlag> flags;
   private List<ResultMapping> composites;
+
+  /**
+   * 当前标签的 resultSet 属性值。
+   */
   private String resultSet;
   private String foreignColumn;
+
+  /**
+   * 当前标签的fetchType 属性，表示是否延迟加载当前标签对应的列。
+   */
   private boolean lazy;
 
   ResultMapping() {

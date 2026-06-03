@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2022 the original author or authors.
+ *    Copyright 2009-2025 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -29,11 +29,24 @@ import org.apache.ibatis.type.TypeHandler;
 import org.apache.ibatis.type.TypeHandlerRegistry;
 
 /**
+ * 解析别名和解析 TypeHandler
  * @author Clinton Begin
  */
 public abstract class BaseBuilder {
+  /**
+   * MyBatis 的初始化过程就是围绕 Configuration 对象展开的，
+   * 我们可以认为 Configuration 是一个单例对象，MyBatis 初始化解析到的全部配置信息都会记录到 Configuration 对象中。
+   */
   protected final Configuration configuration;
+
+  /**
+   * 别名注册中心
+   */
   protected final TypeAliasRegistry typeAliasRegistry;
+
+  /**
+   * TypeHandler 注册中心
+   */
   protected final TypeHandlerRegistry typeHandlerRegistry;
 
   public BaseBuilder(Configuration configuration) {
@@ -97,11 +110,13 @@ public abstract class BaseBuilder {
   }
 
   protected Object createInstance(String alias) {
+    // 解析别名对应的类型
     Class<?> clazz = resolveClass(alias);
     if (clazz == null) {
       return null;
     }
     try {
+      // 调用无参构造器创建实例
       return clazz.getDeclaredConstructor().newInstance();
     } catch (Exception e) {
       throw new BuilderException("Error creating instance. Cause: " + e, e);
@@ -123,6 +138,7 @@ public abstract class BaseBuilder {
     if (typeHandlerAlias == null) {
       return null;
     }
+    // 解析别名对应的类型
     Class<?> type = resolveClass(typeHandlerAlias);
     if (type != null && !TypeHandler.class.isAssignableFrom(type)) {
       throw new BuilderException("Type " + type.getName() + " is not a valid TypeHandler because it does not implement TypeHandler interface");
@@ -147,6 +163,13 @@ public abstract class BaseBuilder {
     return handler;
   }
 
+  /**
+   * 解析别名对应的类型
+   * 别名的解析是通过 TypeAliasRegistry 来实现的，
+   * @param alias
+   * @return
+   * @param <T>
+   */
   protected <T> Class<? extends T> resolveAlias(String alias) {
     return typeAliasRegistry.resolveAlias(alias);
   }

@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2019 the original author or authors.
+ *    Copyright 2009-2025 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ import org.apache.ibatis.logging.LogFactory;
  * It can return null, if no database product name or
  * a properties was specified and no translation was found.
  *
+ * <p>首先会从 DataSource 中拿到数据库的名称，然后根据 <databaseIdProvider>标签配置
+ * 和 DataSource 返回的数据库名称，确定最终的 DatabaseId 标识
  * @author Eduardo Macarron
  */
 public class VendorDatabaseIdProvider implements DatabaseIdProvider {
@@ -60,10 +62,13 @@ public class VendorDatabaseIdProvider implements DatabaseIdProvider {
   }
 
   private String getDatabaseName(DataSource dataSource) throws SQLException {
+    // 从数据库连接中，获取数据库名称
     String productName = getDatabaseProductName(dataSource);
     if (this.properties != null) {
+      // 根据<databaseIdProvider>标签配置，查找自定义数据库名称
       for (Map.Entry<Object, Object> property : properties.entrySet()) {
         if (productName.contains((String) property.getKey())) {
+          // 返回配置的value
           return (String) property.getValue();
         }
       }

@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2019 the original author or authors.
+ *    Copyright 2009-2025 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -90,17 +90,33 @@ public class CacheBuilder {
   }
 
   public Cache build() {
+    // 将implementation默认值设置为PerpetualCache，在decorators集合中默认添加LruCache装饰器，
+    // 都是在setDefaultImplementations()方法中完成的
     setDefaultImplementations();
+    // 通过反射，初始化implementation指定类型的对象
     Cache cache = newBaseCacheInstance(implementation, id);
+    // 创建Cache关联的MetaObject对象，并根据properties设置Cache中的各个字段
     setCacheProperties(cache);
     // issue #352, do not apply decorators to custom caches
+    // 根据上面创建的Cache对象类型，决定是否添加装饰器
     if (PerpetualCache.class.equals(cache.getClass())) {
       for (Class<? extends Cache> decorator : decorators) {
+        // 如果是PerpetualCache类型，则为其添加decorators集合中指定的装饰器
         cache = newCacheDecoratorInstance(decorator, cache);
+        // 依赖MetaObject将properties中配置信息设置到Cache的各个属性中，同时调用Cache的initialize()方法完成初始化
         setCacheProperties(cache);
       }
+      // 根据readWrite、blocking、clearInterval等配置，
+      // 添加SerializedCache、ScheduledCache等装饰器
       cache = setStandardDecorators(cache);
+      // BlockingCache
+      // SynchronizedCache
+      // LoggingCache
+      // ScheduledCache
+      // PerpetualCache
     } else if (!LoggingCache.class.isAssignableFrom(cache.getClass())) {
+      // 如果不是PerpetualCache类型，就是其他自定义类型的Cache，则添加一个LoggingCache装饰器
+
       cache = new LoggingCache(cache);
     }
     return cache;
@@ -176,6 +192,7 @@ public class CacheBuilder {
         }
       }
     }
+    // 调用Cache的initialize()方法，在该方法中会调用Cache的open()方法
     if (InitializingObject.class.isAssignableFrom(cache.getClass())) {
       try {
         ((InitializingObject) cache).initialize();

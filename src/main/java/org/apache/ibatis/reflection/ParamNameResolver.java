@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2020 the original author or authors.
+ *    Copyright 2009-2025 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -62,11 +62,13 @@ public class ParamNameResolver {
     int paramCount = paramAnnotations.length;
     // get names from @Param annotations
     for (int paramIndex = 0; paramIndex < paramCount; paramIndex++) {
+      // RowBounds or ResultHandler should be ignored
       if (isSpecialParameter(paramTypes[paramIndex])) {
         // skip special parameters
         continue;
       }
       String name = null;
+      // get name from @Param annotation
       for (Annotation annotation : paramAnnotations[paramIndex]) {
         if (annotation instanceof Param) {
           hasParamAnnotation = true;
@@ -75,7 +77,7 @@ public class ParamNameResolver {
         }
       }
       if (name == null) {
-        // @Param was not specified.
+        // @Param was not specified.use actual parameter name
         if (useActualParamName) {
           name = getActualParamName(method, paramIndex);
         }
@@ -120,17 +122,26 @@ public class ParamNameResolver {
    * @return the named params
    */
   public Object getNamedParams(Object[] args) {
+    // 获取方法中非特殊类型(RowBounds类型和ResultHandler类型)的参数个数
     final int paramCount = names.size();
     if (args == null || paramCount == 0) {
-      return null;
+      return null; // 方法没有非特殊类型参数，返回null即可
     } else if (!hasParamAnnotation && paramCount == 1) {
+      // 方法参数列表中没有使用@Param注解，且只有一个非特殊类型参数
       Object value = args[names.firstKey()];
       return wrapToMapIfCollection(value, useActualParamName ? names.get(0) : null);
     } else {
+      // 处理存在@Param注解或是存在多个非特殊类型参数的场景
+      // param集合用于记录了参数名称与实参之间的映射关系
+      // 这里的ParamMap继承了HashMap，与HashMap的唯一不同是：
+      // 向ParamMap中添加已经存在的key时，会直接抛出异常，而不是覆盖原有的Key
       final Map<String, Object> param = new ParamMap<>();
       int i = 0;
       for (Map.Entry<Integer, String> entry : names.entrySet()) {
+        // value : name, key : index
         param.put(entry.getValue(), args[entry.getKey()]);
+        // 同时，为参数创建"param+索引"格式的默认参数名称，具体格式为：param1, param2等，
+        // 将"param+索引"的默认参数名称与实参的映射关系也保存到param集合中
         // add generic param names (param1, param2, ...)
         final String genericParamName = GENERIC_NAME_PREFIX + (i + 1);
         // ensure not to overwrite parameter named with @Param
